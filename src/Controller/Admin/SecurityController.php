@@ -18,4 +18,10 @@ class SecurityController extends AbstractController
             'error'         => $error,
         ]);
     }
+
+    #[Route('/logout', name: 'app_logout')]
+    public function logout(): void
+    {
+        // This method will be intercepted by the logout handler before it's executed
+    }
 }
