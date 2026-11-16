@@ -20,8 +20,7 @@ class SecurityController extends AbstractController
     }
 
     #[Route('/logout', name: 'app_logout')]
-    public function logout(): void
+    public function logout()
     {
-        // This method will be intercepted by the logout handler before it's executed
     }
 }
