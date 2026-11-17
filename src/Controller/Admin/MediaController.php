@@ -23,19 +23,26 @@ class MediaController extends AbstractController
     {
         $page = $request->query->getInt('page', 1);
 
-        $criteria = [];
+        $qb = $this->doctrine->getRepository(Media::class)->createQueryBuilder('m');
 
         if (!$this->isGranted('ROLE_ADMIN')) {
-            $criteria['user'] = $this->getUser();
+            $qb->where('m.user = :user')
+               ->setParameter('user', $this->getUser());
         }
 
-        $medias = $this->doctrine->getRepository(Media::class)->findBy(
-            $criteria,
-            ['id' => 'ASC'],
-            25,
-            25 * ($page - 1)
-        );
-        $total = $this->doctrine->getRepository(Media::class)->count([]);
+        $qb->orderBy('m.album', 'ASC')
+           ->addOrderBy('m.id', 'ASC')
+           ->setFirstResult(25 * ($page - 1))
+           ->setMaxResults(25);
+
+        $medias = $qb->getQuery()->getResult();
+        
+        $countQb = $this->doctrine->getRepository(Media::class)->createQueryBuilder('m');
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            $countQb->where('m.user = :user')
+                    ->setParameter('user', $this->getUser());
+        }
+        $total = count($countQb->getQuery()->getResult());
 
         return $this->render('admin/media/index.html.twig', [
             'medias' => $medias,
@@ -44,7 +51,7 @@ class MediaController extends AbstractController
         ]);
     }
 
-    #[Route('/admin/media/add', name: 'admin_media_add')]
+    #[Route('/admin/media/add', name: 'admin_media_add', methods: ['POST', 'GET'])]
     public function add(Request $request)
     {
         $media = new Media();
@@ -55,8 +62,9 @@ class MediaController extends AbstractController
             if (!$this->isGranted('ROLE_ADMIN')) {
                 $media->setUser($this->getUser());
             }
-            $media->setPath('uploads/' . md5(uniqid()) . '.' . $media->getFile()->guessExtension());
-            $media->getFile()->move('uploads/', $media->getPath());
+            $filename = md5(uniqid()) . '.' . $media->getFile()->guessExtension();
+            $media->setPath('uploads/' . $filename);
+            $media->getFile()->move('uploads/', $filename);
             $em = $this->doctrine->getManager();
             $em->persist($media);
             $em->flush();
