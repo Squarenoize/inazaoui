@@ -27,7 +27,7 @@ class HomeController extends AbstractController
     #[Route('/guests', name: 'guests')]
     public function guests()
     {
-        $guests = $this->doctrine->getRepository(User::class)->findBy(['admin' => false]);
+        $guests = $this->doctrine->getRepository(User::class)->findByRoles('ROLE_USER');
         return $this->render('front/guests.html.twig', [
             'guests' => $guests
         ]);
@@ -47,7 +47,7 @@ class HomeController extends AbstractController
     {
         $albums = $this->doctrine->getRepository(Album::class)->findAll();
         $album = $id ? $this->doctrine->getRepository(Album::class)->find($id) : null;
-        $user = $this->doctrine->getRepository(User::class)->findOneByAdmin(true);
+        $user = $this->doctrine->getRepository(User::class)->findOneByAdmin();
 
         $medias = $album
             ? $this->doctrine->getRepository(Media::class)->findByAlbum($album)

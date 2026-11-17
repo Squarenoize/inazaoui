@@ -40,20 +40,37 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->flush();
     }
 
-//    /**
-//     * @return User[] Returns an array of User objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('u')
-//            ->andWhere('u.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('u.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /**
+     * @return User[] Returns an array of User objects with the given role
+     */
+    public function findByRoles(string $role): array
+    {
+        $em = $this->getEntityManager();
+        $result = $em->getConnection()->executeQuery(
+            'SELECT * FROM "user" WHERE roles::text LIKE :role',
+            ['role' => '%' . $role . '%']
+        )->fetchAllAssociative();
+        
+        $users = [];
+        foreach ($result as $row) {
+            $users[] = $em->getRepository(User::class)->find($row['id']);
+        }
+        return array_filter($users);
+    }
+
+    /**
+     * Find the admin user (user with ROLE_ADMIN)
+     */
+    public function findOneByAdmin(): ?User
+    {
+        $em = $this->getEntityManager();
+        $result = $em->getConnection()->executeQuery(
+            'SELECT id FROM "user" WHERE roles::text LIKE :admin LIMIT 1',
+            ['admin' => '%ROLE_ADMIN%']
+        )->fetchAssociative();
+        
+        return $result ? $em->getRepository(User::class)->find($result['id']) : null;
+    }
 
 //    public function findOneBySomeField($value): ?User
 //    {
