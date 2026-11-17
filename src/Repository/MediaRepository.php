@@ -25,7 +25,7 @@ class MediaRepository extends ServiceEntityRepository
     public function findPaginatedByUser(?User $user = null, int $page = 1, int $limit = 25): array
     {
         $qb = $this->createQueryBuilder('m')
-            ->orderBy('m.album', 'DESC')
+            ->orderBy('m.album', 'ASC')
             ->addOrderBy('m.id', 'ASC')
             ->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit);
