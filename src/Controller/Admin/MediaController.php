@@ -22,27 +22,10 @@ class MediaController extends AbstractController
     public function index(Request $request)
     {
         $page = $request->query->getInt('page', 1);
+        $user = $this->isGranted('ROLE_ADMIN') ? null : $this->getUser();
 
-        $qb = $this->doctrine->getRepository(Media::class)->createQueryBuilder('m');
-
-        if (!$this->isGranted('ROLE_ADMIN')) {
-            $qb->where('m.user = :user')
-               ->setParameter('user', $this->getUser());
-        }
-
-        $qb->orderBy('m.album', 'ASC')
-           ->addOrderBy('m.id', 'ASC')
-           ->setFirstResult(25 * ($page - 1))
-           ->setMaxResults(25);
-
-        $medias = $qb->getQuery()->getResult();
-        
-        $countQb = $this->doctrine->getRepository(Media::class)->createQueryBuilder('m');
-        if (!$this->isGranted('ROLE_ADMIN')) {
-            $countQb->where('m.user = :user')
-                    ->setParameter('user', $this->getUser());
-        }
-        $total = count($countQb->getQuery()->getResult());
+        $medias = $this->doctrine->getRepository(Media::class)->findPaginatedByUser($user, $page);
+        $total = $this->doctrine->getRepository(Media::class)->countByUser($user);
 
         return $this->render('admin/media/index.html.twig', [
             'medias' => $medias,

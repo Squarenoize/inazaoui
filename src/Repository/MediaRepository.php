@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Media;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -21,28 +22,31 @@ class MediaRepository extends ServiceEntityRepository
         parent::__construct($registry, Media::class);
     }
 
-//    /**
-//     * @return Media[] Returns an array of Media objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('m')
-//            ->andWhere('m.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('m.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    public function findPaginatedByUser(?User $user = null, int $page = 1, int $limit = 25): array
+    {
+        $qb = $this->createQueryBuilder('m')
+            ->orderBy('m.album', 'DESC')
+            ->addOrderBy('m.id', 'ASC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
 
-//    public function findOneBySomeField($value): ?Media
-//    {
-//        return $this->createQueryBuilder('m')
-//            ->andWhere('m.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+        if ($user !== null) {
+            $qb->where('m.user = :user')
+               ->setParameter('user', $user);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    public function countByUser(?User $user = null): int
+    {
+        $qb = $this->createQueryBuilder('m');
+
+        if ($user !== null) {
+            $qb->where('m.user = :user')
+               ->setParameter('user', $user);
+        }
+
+        return count($qb->getQuery()->getResult());
+    }
 }
