@@ -56,6 +56,19 @@ final class GuestController extends AbstractController
         return $this->redirectToRoute('admin_guest_index');
     }
 
+    #[Route('/admin/guest/delete/{id}', name: 'admin_guest_delete', methods: ['POST'])]
+    public function delete(int $id, Request $request, EntityManagerInterface $entityManager, UserRepository $userRepository): Response
+    {
+        $this->validateCsrfToken($request, 'admin_guest_delete');
+
+        $user = $userRepository->find($id);
+        if ($user) {
+            $entityManager->remove($user);
+            $entityManager->flush();
+        }
+        return $this->redirectToRoute('admin_guest_index');
+    }
+
     private function validateCsrfToken(Request $request, string $tokenId): void
     {
         $token = $request->request->get('_token');

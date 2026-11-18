@@ -66,7 +66,6 @@ class MediaController extends AbstractController
         $em = $this->doctrine->getManager();
         $em->remove($media);
         $em->flush();
-        unlink($media->getPath());
 
         return $this->redirectToRoute('admin_media_index');
     }
