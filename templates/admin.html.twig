@@ -5,7 +5,27 @@
         <div class="row">
             <nav class="col-md-3 col-lg-2 d-none d-md-block bg-dark sidebar min-vh-100 p-4">
                 <div class="position-sticky">
-                    <h1 class="text-white">Admin</h1>
+                    <div class="row mb-2">
+                        <div class="col-6">
+                            <a href="{{ path('home') }}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-house"></i>
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ path('app_logout') }}" class="btn btn-sm btn-primary float-end">
+                                Déconnexion
+                            </a>
+                        </div>
+                        <div class="col-6 text-right">
+                        </div>
+                    </div>
+                    <h1 class="text-white">
+                        {% if is_granted('ROLE_ADMIN') %}
+                            Admin
+                        {% else %}
+                            {{ user.name }}
+                        {% endif %}
+                    </h1>
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link" href="{{ path('admin_media_index') }}">
