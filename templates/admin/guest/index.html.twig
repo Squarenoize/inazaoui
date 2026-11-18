@@ -19,7 +19,11 @@
                 <td>{{ guest.name }}</td>
                 <td>{{ guest.email }}</td>
                 <td>
-                    <a href="#" class="btn btn-warning">Bloquer</a>
+                    {% if guest.deactivationDate %}
+                        <a href="{{ path('admin_guest_reactivate', {'id': guest.id}) }}" class="btn btn-success">Réactiver</a>
+                    {% else %}
+                        <a href="{{ path('admin_guest_deactivate', {'id': guest.id}) }}" class="btn btn-warning">Bloquer</a>
+                    {% endif %}
                     <a href="#" class="btn btn-danger">Supprimer</a>
                 </td>
             </tr>
