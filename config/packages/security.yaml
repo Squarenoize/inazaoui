@@ -26,7 +26,9 @@ security:
     role_hierarchy:
         ROLE_ADMIN: ROLE_USER
     access_control:
-        - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/admin/media, roles: ROLE_USER }
+        - { path: ^/admin/album, roles: ROLE_ADMIN }
+        - { path: ^/admin/guest, roles: ROLE_ADMIN }
 
 when@test:
     security:

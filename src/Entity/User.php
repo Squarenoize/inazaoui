@@ -41,6 +41,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Media::class, mappedBy: 'user')]
     private Collection $medias;
 
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $deactivationDate = null;
+
+    #[ORM\Column]
+    private ?bool $firstConnection = null;
+
     public function __construct()
     {
         $this->medias = new ArrayCollection();
@@ -119,5 +125,29 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function eraseCredentials(): void
     {
         // If you store any temporary, sensitive data on the user, clear it here
+    }
+
+    public function getDeactivationDate(): ?\DateTimeImmutable
+    {
+        return $this->deactivationDate;
+    }
+
+    public function setDeactivationDate(?\DateTimeImmutable $deactivationDate): static
+    {
+        $this->deactivationDate = $deactivationDate;
+
+        return $this;
+    }
+
+    public function isFirstConnection(): ?bool
+    {
+        return $this->firstConnection;
+    }
+
+    public function setFirstConnection(bool $firstConnection): static
+    {
+        $this->firstConnection = $firstConnection;
+
+        return $this;
     }
 }
