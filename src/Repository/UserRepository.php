@@ -46,16 +46,16 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     public function findByRoles(string $role): array
     {
         $em = $this->getEntityManager();
-        $result = $em->getConnection()->executeQuery(
-            'SELECT * FROM "user" WHERE roles::text LIKE :role',
+        $ids = $em->getConnection()->executeQuery(
+            'SELECT id FROM "user" WHERE CAST(roles AS TEXT) LIKE :role',
             ['role' => '%' . $role . '%']
-        )->fetchAllAssociative();
+        )->fetchFirstColumn();
         
-        $users = [];
-        foreach ($result as $row) {
-            $users[] = $em->getRepository(User::class)->find($row['id']);
+        if (empty($ids)) {
+            return [];
         }
-        return array_filter($users);
+        
+        return $this->findBy(['id' => $ids]);
     }
 
     /**
@@ -65,11 +65,11 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     {
         $em = $this->getEntityManager();
         $result = $em->getConnection()->executeQuery(
-            'SELECT id FROM "user" WHERE roles::text LIKE :admin LIMIT 1',
+            'SELECT id FROM "user" WHERE CAST(roles AS TEXT) LIKE :admin LIMIT 1',
             ['admin' => '%ROLE_ADMIN%']
-        )->fetchAssociative();
+        )->fetchOne();
         
-        return $result ? $em->getRepository(User::class)->find($result['id']) : null;
+        return $result ? $this->find($result) : null;
     }
 
 //    public function findOneBySomeField($value): ?User
