@@ -20,9 +20,15 @@
                 <td>{{ guest.email }}</td>
                 <td>
                     {% if guest.deactivationDate %}
-                        <a href="{{ path('admin_guest_reactivate', {'id': guest.id}) }}" class="btn btn-success">Réactiver</a>
+                        <form method="POST" action="{{ path('admin_guest_reactivate', {'id': guest.id}) }}" style="display:inline;">
+                            <input type="hidden" name="_token" value="{{ csrf_token('admin_guest_reactivate') }}">
+                            <button type="submit" class="btn btn-success">Réactiver</button>
+                        </form>
                     {% else %}
-                        <a href="{{ path('admin_guest_deactivate', {'id': guest.id}) }}" class="btn btn-warning">Bloquer</a>
+                        <form method="POST" action="{{ path('admin_guest_deactivate', {'id': guest.id}) }}" style="display:inline;">
+                            <input type="hidden" name="_token" value="{{ csrf_token('admin_guest_deactivate') }}">
+                            <button type="submit" class="btn btn-warning">Bloquer</button>
+                        </form>
                     {% endif %}
                     <a href="#" class="btn btn-danger">Supprimer</a>
                 </td>
