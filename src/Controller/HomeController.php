@@ -27,7 +27,7 @@ class HomeController extends AbstractController
     #[Route('/guests', name: 'guests')]
     public function guests()
     {
-        $guests = $this->doctrine->getRepository(User::class)->findByRoles('ROLE_USER');
+        $guests = $this->doctrine->getRepository(User::class)->findActivesByRoles('ROLE_USER');
         return $this->render('front/guests.html.twig', [
             'guests' => $guests
         ]);

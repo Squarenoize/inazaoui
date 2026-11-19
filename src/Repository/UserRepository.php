@@ -41,13 +41,37 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /**
-     * @return User[] Returns an array of User objects with the given role
+     * @return User[] Returns an array of all Users objects with the given role for the admin
      */
     public function findByRoles(string $role): array
     {
         $em = $this->getEntityManager();
         $ids = $em->getConnection()->executeQuery(
             'SELECT id FROM "user" WHERE CAST(roles AS TEXT) LIKE :role',
+            ['role' => '%' . $role . '%']
+        )->fetchFirstColumn();
+        
+        if (empty($ids)) {
+            return [];
+        }
+        
+        return $this->createQueryBuilder('u')
+            ->leftJoin('u.medias', 'm')
+            ->addSelect('m')
+            ->where('u.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return User[] Returns an array of User objects active with the given role
+     */
+    public function findActivesByRoles(string $role): array
+    {
+        $em = $this->getEntityManager();
+        $ids = $em->getConnection()->executeQuery(
+            'SELECT id FROM "user" WHERE CAST(roles AS TEXT) LIKE :role and deactivation_date IS NULL',
             ['role' => '%' . $role . '%']
         )->fetchFirstColumn();
         
