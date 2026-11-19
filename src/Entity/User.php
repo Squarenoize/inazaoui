@@ -123,6 +123,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return array_unique($roles);
     }
+
+    public function setRoles(array $roles): static
+    {
+        $this->roles = $roles;
+
+        return $this;
+    }
+    
     public function getUserIdentifier(): string
     {
         return (string) $this->email;

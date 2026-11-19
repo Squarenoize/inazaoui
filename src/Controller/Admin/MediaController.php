@@ -38,6 +38,7 @@ class MediaController extends AbstractController
     #[Route('/admin/media/add', name: 'admin_media_add', methods: ['POST', 'GET'])]
     public function add(Request $request)
     {
+        $user = $this->getUser();
         $media = new Media();
         $form = $this->createForm(MediaType::class, $media, ['is_admin' => $this->isGranted('ROLE_ADMIN')]);
         $form->handleRequest($request);
@@ -56,7 +57,7 @@ class MediaController extends AbstractController
             return $this->redirectToRoute('admin_media_index');
         }
 
-        return $this->render('admin/media/add.html.twig', ['form' => $form->createView()]);
+        return $this->render('admin/media/add.html.twig', ['form' => $form->createView(), 'user' => $user]);
     }
 
     #[Route('/admin/media/delete/{id}', name: 'admin_media_delete')]

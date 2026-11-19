@@ -5,6 +5,13 @@
         <div class="row">
             <nav class="col-md-3 col-lg-2 d-none d-md-block bg-dark sidebar min-vh-100 p-4">
                 <div class="position-sticky">
+                    <h1 class="text-white mb-4">
+                        {% if is_granted('ROLE_ADMIN') %}
+                            Admin
+                        {% else %}
+                            {{ user.name }}
+                        {% endif %}
+                    </h1>
                     <div class="row mb-2">
                         <div class="col-6">
                             <a href="{{ path('home') }}" class="btn btn-sm btn-primary">
@@ -19,13 +26,6 @@
                         <div class="col-6 text-right">
                         </div>
                     </div>
-                    <h1 class="text-white">
-                        {% if is_granted('ROLE_ADMIN') %}
-                            Admin
-                        {% else %}
-                            {{ user.name }}
-                        {% endif %}
-                    </h1>
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link" href="{{ path('admin_media_index') }}">
@@ -48,6 +48,14 @@
                 </div>
             </nav>
             <main class="col-md-9 ms-sm-auto col-lg-10 p-4">
+                {% for category, messages in app.flashes %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endfor %}
                 {% block admin %}{% endblock %}
             </main>
         </div>
