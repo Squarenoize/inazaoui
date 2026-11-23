@@ -9,6 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
@@ -16,7 +17,7 @@ use Symfony\Component\Validator\Constraints as Assert;
     new ORM\Index(name: 'idx_user_roles_text', columns: ['roles'], options: ['where' => 'roles IS NOT NULL'])
 ])]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
-#[UniqueEntity(fields: ['email'], message: 'This email is already in use.')]
+#[UniqueEntity(fields: ['email'], message: 'Cet email est déjà utilisé.')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -24,7 +25,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column]
+    #[ORM\Column(length: 255)]
     private ?string $name;
 
     #[ORM\Column(type: 'text', nullable: true)]
@@ -35,8 +36,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column]
     #[Assert\Length(
-        min: 8,
+        min: 12,
         minMessage: 'Le mot de passe doit contenir au moins {{ limit }} caractères.',
+        groups: ['password-change']
+    )]
+    #[Assert\NotBlank(
+        message: 'Le mot de passe ne peut pas être vide.',
+        groups: ['password-change']
+    )]
+    #[Assert\Regex(
+        pattern: '/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_]).+$/',
+        message: 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.',
         groups: ['password-change']
     )]
     private ?string $password = null;
