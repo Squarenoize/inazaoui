@@ -7,12 +7,16 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationSuccessHandlerI
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\RouterInterface;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 final class LoginSuccessHandler implements AuthenticationSuccessHandlerInterface
 {
-    public function __construct(private RouterInterface $router)
-    {
+    public function __construct(
+        private RouterInterface $router,
+        private TokenStorageInterface $tokenStorage
+    ) {
     }
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token): RedirectResponse
@@ -23,6 +27,7 @@ final class LoginSuccessHandler implements AuthenticationSuccessHandlerInterface
             return new RedirectResponse($this->router->generate('admin_media_index'));
         }
 
+        // If user has firstConnection = true and is not admin, redirect to change password
         if ($user->isFirstConnection() && !in_array('ROLE_ADMIN', $user->getRoles())) {
             return new RedirectResponse($this->router->generate('app_change_password'));
         }

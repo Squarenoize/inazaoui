@@ -35,20 +35,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $email = null;
 
     #[ORM\Column]
-    #[Assert\Length(
-        min: 12,
-        minMessage: 'Le mot de passe doit contenir au moins {{ limit }} caractères.',
-        groups: ['password-change']
-    )]
-    #[Assert\NotBlank(
-        message: 'Le mot de passe ne peut pas être vide.',
-        groups: ['password-change']
-    )]
-    #[Assert\Regex(
-        pattern: '/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_]).+$/',
-        message: 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.',
-        groups: ['password-change']
-    )]
     private ?string $password = null;
 
     #[ORM\Column(type: 'json')]
