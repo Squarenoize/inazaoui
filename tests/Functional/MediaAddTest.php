@@ -4,6 +4,7 @@ namespace App\Tests\Functional;
 
 use App\Entity\Media;
 use App\Entity\User;
+use App\Entity\Album;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -53,6 +54,53 @@ class MediaAddTest extends WebTestCase
         $this->createdMediaPaths[] = $media->getPath();
     }
 
+    public function testAdminCanAddAMediaWithAlbum(): void
+    {
+        $client = static::createClient();
+        $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
+
+        $admin = $this->createUser(
+            'media-admin@example.com',
+            'Admin@12345!',
+            ['ROLE_ADMIN']
+        );
+
+        $album = new Album();
+        $album->setName('Admin Album');
+        $this->entityManager->persist($album);
+        $this->entityManager->flush();
+
+        $imagePath = $this->createValidPng();
+        $client->loginUser($admin);
+
+        $crawler = $client->request('GET', '/admin/media/add');
+        self::assertResponseIsSuccessful();
+
+        $form = $crawler->selectButton('Ajouter')->form([
+            'media[title]' => 'Admin Sunset Test',
+        ]);
+
+        $form['media[file]']->upload($imagePath);
+
+        $form['media[user]']->select($admin->getId());
+        $form['media[album]']->select($album->getId());
+        $client->submit($form);
+
+        self::assertResponseRedirects('/admin/media');
+
+        $media = $this->entityManager
+            ->getRepository(Media::class)
+            ->findOneBy(['title' => 'Admin Sunset Test']);
+
+        self::assertNotNull($media);
+        self::assertSame($admin->getId(), $media->getUser()?->getId());
+        self::assertSame('Admin Sunset Test', $media->getTitle());
+        self::assertSame($album->getId(), $media->getAlbum()?->getId());
+        self::assertFileExists($media->getPath());
+
+        $this->createdMediaPaths[] = $media->getPath();
+    }
+
     public function testInvalidFileIsRejected(): void
     {
         $client = static::createClient();
@@ -97,6 +145,14 @@ class MediaAddTest extends WebTestCase
                 if (file_exists($path)) {
                     unlink($path);
                 }
+            }
+
+            $albums = $this->entityManager
+                ->getRepository(Album::class)
+                ->findBy(['name' => 'Admin Album']);
+
+            foreach ($albums as $album) {
+                $this->entityManager->remove($album);
             }
 
             $medias = $this->entityManager
