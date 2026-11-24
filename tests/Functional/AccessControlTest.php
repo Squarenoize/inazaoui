@@ -126,6 +126,7 @@ class AccessControlTest extends WebTestCase
 
     public function restrictedRouteProvider(): iterable
     {
+        yield 'password change' => ['/change-password'];
         yield 'media administration' => ['/admin/media'];
         yield 'album administration' => ['/admin/album'];
         yield 'guest administration' => ['/admin/guest'];
