@@ -43,6 +43,10 @@ class SecurityController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
+        if (!$user->isFirstConnection() || in_array('ROLE_ADMIN', $user->getRoles(), true)) {
+            throw $this->createAccessDeniedException();
+        }
+
         if ($request->isMethod('POST')) {
             $newPassword = $request->request->get('new_password');
             $confirmPassword = $request->request->get('confirm_password');

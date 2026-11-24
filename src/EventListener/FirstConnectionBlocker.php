@@ -41,8 +41,8 @@ class FirstConnectionBlocker implements EventSubscriberInterface
             return;
         }
 
-        // If user needs to change password
-        if ($user->isFirstConnection() === true) {
+        // Non-admin users must change their password before accessing the application.
+        if ($user->isFirstConnection() === true && !in_array('ROLE_ADMIN', $user->getRoles(), true)) {
             $routeName = $event->getRequest()->attributes->get('_route');
             $allowedRoutes = ['app_change_password', 'app_logout'];
 
