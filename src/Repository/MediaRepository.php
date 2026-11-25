@@ -6,6 +6,7 @@ use App\Entity\Media;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use SortDirection;
 
 /**
  * @extends ServiceEntityRepository<Media>
@@ -25,8 +26,8 @@ class MediaRepository extends ServiceEntityRepository
     public function findPaginatedByUser(?User $user = null, int $page = 1, int $limit = 25): array
     {
         $qb = $this->createQueryBuilder('m')
-            ->orderBy('m.album', 'ASC')
-            ->addOrderBy('m.id', 'ASC')
+            ->orderBy('m.album', SortDirection::Ascending)
+            ->addOrderBy('m.id', SortDirection::Ascending)
             ->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit);
 
