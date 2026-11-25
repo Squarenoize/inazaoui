@@ -56,6 +56,8 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         }
         
         return $this->createQueryBuilder('u')
+            ->leftJoin('u.medias', 'm')
+            ->addSelect('m')
             ->where('u.id IN (:ids)')
             ->setParameter('ids', $ids)
             ->getQuery()
@@ -78,6 +80,8 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         }
         
         return $this->createQueryBuilder('u')
+            ->leftJoin('u.medias', 'm')
+            ->addSelect('m')
             ->where('u.id IN (:ids)')
             ->setParameter('ids', $ids)
             ->getQuery()
