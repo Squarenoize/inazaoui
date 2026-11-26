@@ -48,8 +48,8 @@ class SecurityController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
-            $newPassword = $request->request->get('new_password');
-            $confirmPassword = $request->request->get('confirm_password');
+            $newPassword = $request->request->getString('new_password');
+            $confirmPassword = $request->request->getString('confirm_password');
 
             if ($newPassword !== $confirmPassword) {
                 $this->addFlash('error', 'Les mots de passe ne correspondent pas.');

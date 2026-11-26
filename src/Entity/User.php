@@ -143,7 +143,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     
     public function getUserIdentifier(): string
     {
-        return (string) $this->email;
+        if ($this->email === null || trim($this->email) === '') {
+            throw new \LogicException('User email must be set before Symfony can identify the user.');
+        }
+
+        return $this->email;
     }
 
     #[\Deprecated]
