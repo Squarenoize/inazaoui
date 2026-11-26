@@ -25,37 +25,31 @@ final class GuestController extends AbstractController
     }
 
     #[Route('/admin/guest/deactivate/{id}', name: 'admin_guest_deactivate', methods: ['POST'])]
-    public function deactivate(int $id, EntityManagerInterface $entityManager, User $user): Response
+    public function deactivate(EntityManagerInterface $entityManager, User $user): Response
     {
-  
-        if ($user) {
-            $user->setDeactivationDate(new \DateTimeImmutable());
-            $entityManager->persist($user);
-            $entityManager->flush();
-        }
+        $user->setDeactivationDate(new \DateTimeImmutable());
+        $entityManager->persist($user);
+        $entityManager->flush();
+
         return $this->redirectToRoute('admin_guest_index');
     }
 
     #[Route('/admin/guest/reactivate/{id}', name: 'admin_guest_reactivate', methods: ['POST'])]
     public function activate(EntityManagerInterface $entityManager, User $user): Response
     {
+        $user->setDeactivationDate(null);
+        $entityManager->persist($user);
+        $entityManager->flush();
 
-        if ($user) {
-            $user->setDeactivationDate(null);
-            $entityManager->persist($user);
-            $entityManager->flush();
-        }
         return $this->redirectToRoute('admin_guest_index');
     }
 
     #[Route('/admin/guest/delete/{id}', name: 'admin_guest_delete', methods: ['POST'])]
     public function delete(EntityManagerInterface $entityManager, User $user): Response
     {
+        $entityManager->remove($user);
+        $entityManager->flush();
 
-        if ($user) {
-            $entityManager->remove($user);
-            $entityManager->flush();
-        }
         return $this->redirectToRoute('admin_guest_index');
     }
 

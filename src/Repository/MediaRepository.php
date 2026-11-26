@@ -12,9 +12,9 @@ use SortDirection;
  * @extends ServiceEntityRepository<Media>
  *
  * @method Media|null find($id, $lockMode = null, $lockVersion = null)
- * @method Media|null findOneBy(array $criteria, array $orderBy = null)
+ * @method Media|null findOneBy(array<string, mixed> $criteria, array<string, 'ASC'|'DESC'>|null $orderBy = null)
  * @method Media[]    findAll()
- * @method Media[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method Media[] findBy(array<string, mixed> $criteria, array<string, 'ASC'|'DESC'>|null $orderBy = null, $limit = null, $offset = null)
  */
 class MediaRepository extends ServiceEntityRepository
 {
@@ -23,6 +23,7 @@ class MediaRepository extends ServiceEntityRepository
         parent::__construct($registry, Media::class);
     }
 
+    /** @return Media[] */
     public function findPaginatedByUser(?User $user = null, int $page = 1, int $limit = 25): array
     {
         $qb = $this->createQueryBuilder('m')

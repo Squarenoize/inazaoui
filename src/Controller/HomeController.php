@@ -45,8 +45,10 @@ class HomeController extends AbstractController
             : null;
         
         $medias = $album
-            ? $mediaRepository->findByAlbum($album)
-            : $mediaRepository->findByUser($user);
+            ? $mediaRepository->findBy(['album' => $album])
+            : ($user !== null
+                ? $mediaRepository->findBy(['user' => $user])
+                : []);
         return $this->render('front/portfolio.html.twig', [
             'albums' => $albums,
             'album' => $album,

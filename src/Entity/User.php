@@ -26,6 +26,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    /** @phpstan-ignore property.unusedType */
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
@@ -40,9 +41,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?string $password = null;
 
+    /** @var list<string> */
     #[ORM\Column(type: 'json')]
     private array $roles = [];
 
+    /** @var Collection<int, Media> */
     #[ORM\OneToMany(targetEntity: Media::class, mappedBy: 'user', cascade: ['remove'])]
     private Collection $medias;
 
@@ -94,11 +97,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->description = $description;
     }
 
+    /** @return Collection<int, Media> */
     public function getMedias(): Collection
     {
         return $this->medias;
     }
 
+    /** @param Collection<int, Media> $medias */
     public function setMedias(Collection $medias): void
     {
         $this->medias = $medias;
@@ -115,14 +120,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->password = $password;
     }
 
+    /**
+     * @return list<string>
+     */
     public function getRoles(): array
     {
         $roles = $this->roles;
         $roles[] = 'ROLE_USER';
 
-        return array_unique($roles);
+        return array_values(array_unique($roles));
     }
 
+    /**
+     * @param list<string> $roles
+     */
     public function setRoles(array $roles): static
     {
         $this->roles = $roles;

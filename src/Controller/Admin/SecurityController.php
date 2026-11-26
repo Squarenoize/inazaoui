@@ -26,6 +26,9 @@ class SecurityController extends AbstractController
         ]);
     }
 
+    /**
+     * @return void
+     */
     #[Route('/logout', name: 'app_logout', methods: ['POST'])]
     public function logout()
     {

@@ -3,6 +3,7 @@
 namespace App\Controller\Admin;
 
 use App\Entity\Media;
+use App\Entity\User;
 use App\Form\MediaType;
 use App\Repository\MediaRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -18,7 +19,14 @@ class MediaController extends AbstractController
     public function index(Request $request, MediaRepository $mediaRepository): Response
     {
         $page = $request->query->getInt('page', 1);
-        $user = $this->isGranted('ROLE_ADMIN') ? null : $this->getUser();
+        $user = null;
+
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            $user = $this->getUser();
+            if (!$user instanceof User) {
+                throw $this->createAccessDeniedException();
+            }
+        }
 
         $medias = $mediaRepository->findPaginatedByUser($user, $page);
         $total = $mediaRepository->countByUser($user);
@@ -35,13 +43,17 @@ class MediaController extends AbstractController
     public function add(Request $request, EntityManagerInterface $entityManager): Response
     {
         $user = $this->getUser();
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException();
+        }
+
         $media = new Media();
         $form = $this->createForm(MediaType::class, $media, ['is_admin' => $this->isGranted('ROLE_ADMIN')]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             if (!$this->isGranted('ROLE_ADMIN')) {
-                $media->setUser($this->getUser());
+                $media->setUser($user);
             }
             $filename = md5(uniqid()) . '.' . $media->getFile()->guessExtension();
             $media->setPath('uploads/' . $filename);
