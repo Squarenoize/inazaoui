@@ -17,7 +17,12 @@ class AccessControlTest extends WebTestCase
     {
         self::ensureKernelShutdown();
         $this->client = static::createClient();
-        $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
+
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        if (!$entityManager instanceof EntityManagerInterface) {
+            throw new \LogicException('Entity manager service is unavailable.');
+        }
+        $this->entityManager = $entityManager;
     }
 
     protected function tearDown(): void

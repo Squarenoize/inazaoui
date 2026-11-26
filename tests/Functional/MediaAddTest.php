@@ -22,7 +22,7 @@ class MediaAddTest extends WebTestCase
     public function testGuestCanAddAMedia(): void
     {
         $client = static::createClient();
-        $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $this->entityManager = $this->getEntityManager();
 
         $user = $this->createUser(
             'media-guest@example.com',
@@ -63,7 +63,7 @@ class MediaAddTest extends WebTestCase
     public function testAdminCanAddAMediaWithAlbum(): void
     {
         $client = static::createClient();
-        $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $this->entityManager = $this->getEntityManager();
 
         $admin = $this->createUser(
             'media-admin@example.com',
@@ -117,7 +117,7 @@ class MediaAddTest extends WebTestCase
     public function testInvalidFileIsRejected(): void
     {
         $client = static::createClient();
-        $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $this->entityManager = $this->getEntityManager();
 
         $user = $this->createUser(
             'invalid-media-guest@example.com',
@@ -194,6 +194,16 @@ class MediaAddTest extends WebTestCase
         parent::tearDown();
     }
 
+    private function getEntityManager(): EntityManagerInterface
+    {
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        if (!$entityManager instanceof EntityManagerInterface) {
+            throw new \LogicException('Entity manager service is unavailable.');
+        }
+
+        return $entityManager;
+    }
+
     /**
      * @param list<string> $roles
      */
@@ -209,6 +219,9 @@ class MediaAddTest extends WebTestCase
         }
 
         $passwordHasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        if (!$passwordHasher instanceof UserPasswordHasherInterface) {
+            throw new \LogicException('Password hasher service is unavailable.');
+        }
 
         $user = new User();
         $user->setName('Media Test User');
@@ -234,6 +247,9 @@ class MediaAddTest extends WebTestCase
 
         $image = imagecreatetruecolor(1080, 1080);
         $background = imagecolorallocate($image, 30, 90, 150);
+        if ($background === false) {
+            self::markTestSkipped('Impossible d’allouer une couleur pour l’image PNG.');
+        }
         imagefill($image, 0, 0, $background);
 
         $path = tempnam(sys_get_temp_dir(), 'valid-media');

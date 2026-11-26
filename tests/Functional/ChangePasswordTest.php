@@ -19,7 +19,12 @@ class ChangePasswordTest extends WebTestCase
     {
         self::ensureKernelShutdown();
         $this->client = static::createClient();
-        $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
+
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        if (!$entityManager instanceof EntityManagerInterface) {
+            throw new \LogicException('Entity manager service is unavailable.');
+        }
+        $this->entityManager = $entityManager;
     }
 
     protected function tearDown(): void
@@ -93,6 +98,9 @@ class ChangePasswordTest extends WebTestCase
         self::assertFalse($updatedUser->isFirstConnection());
 
         $passwordHasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        if (!$passwordHasher instanceof UserPasswordHasherInterface) {
+            throw new \LogicException('Password hasher service is unavailable.');
+        }
         self::assertTrue(
             $passwordHasher->isPasswordValid($updatedUser, 'NewPassword@123!')
         );
@@ -134,6 +142,9 @@ class ChangePasswordTest extends WebTestCase
         }
 
         $passwordHasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        if (!$passwordHasher instanceof UserPasswordHasherInterface) {
+            throw new \LogicException('Password hasher service is unavailable.');
+        }
 
         $user = new User();
         $user->setName('Change Password Test');

@@ -18,6 +18,16 @@ class LoginTest extends WebTestCase
         self::ensureKernelShutdown();
     }
 
+    private function getEntityManager(): EntityManagerInterface
+    {
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        if (!$entityManager instanceof EntityManagerInterface) {
+            throw new \LogicException('Entity manager service is unavailable.');
+        }
+
+        return $entityManager;
+    }
+
     protected function tearDown(): void
     {
         if ($this->entityManager !== null) {
@@ -40,7 +50,7 @@ class LoginTest extends WebTestCase
     public function testAdminCanLogIn(): void
     {
         $client = static::createClient();
-        $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $this->entityManager = $this->getEntityManager();
         $this->createUser(
             'admin-functional@example.com',
             'Admin@12345!',
@@ -64,7 +74,7 @@ class LoginTest extends WebTestCase
     public function testGuestUsingFirstConnectionIsRedirectedToPasswordChange(): void
     {
         $client = static::createClient();
-        $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $this->entityManager = $this->getEntityManager();
         $this->createUser(
             'guest-functional@example.com',
             'Guest@12345!',
@@ -89,7 +99,7 @@ class LoginTest extends WebTestCase
     public function testInvalidCredentialsDisplayAnError(): void
     {
         $client = static::createClient();
-        $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $this->entityManager = $this->getEntityManager();
         $crawler = $client->request('GET', '/login');
         $form = $crawler->selectButton('Connexion')->form([
             '_username' => 'unknown@example.com',
@@ -108,7 +118,10 @@ class LoginTest extends WebTestCase
     {
         $container = static::getContainer();
         $passwordHasher = $container->get(UserPasswordHasherInterface::class);
-        $this->entityManager = $container->get(EntityManagerInterface::class);
+        if (!$passwordHasher instanceof UserPasswordHasherInterface) {
+            throw new \LogicException('Password hasher service is unavailable.');
+        }
+        $this->entityManager = $this->getEntityManager();
 
         $existingUser = $this->entityManager
             ->getRepository(User::class)

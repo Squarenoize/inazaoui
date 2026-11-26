@@ -19,7 +19,7 @@ class GuestManagementTest extends WebTestCase
     {
         self::ensureKernelShutdown();
         $this->client = static::createClient();
-        $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $this->entityManager = $this->getEntityManager();
     }
 
     public function testAdminCanAddGuest(): void
@@ -77,7 +77,7 @@ class GuestManagementTest extends WebTestCase
         $this->client->submit($deactivateForm);
 
         self::assertResponseRedirects('/admin/guest');
-        $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $this->entityManager = $this->getEntityManager();
         $deactivatedGuest = $this->entityManager
             ->getRepository(User::class)
             ->find($guest->getId());
@@ -90,7 +90,7 @@ class GuestManagementTest extends WebTestCase
         $this->client->submit($reactivateForm);
 
         self::assertResponseRedirects('/admin/guest');
-        $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $this->entityManager = $this->getEntityManager();
         $reactivatedGuest = $this->entityManager
             ->getRepository(User::class)
             ->find($guest->getId());
@@ -133,6 +133,16 @@ class GuestManagementTest extends WebTestCase
         parent::tearDown();
     }
 
+    private function getEntityManager(): EntityManagerInterface
+    {
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        if (!$entityManager instanceof EntityManagerInterface) {
+            throw new \LogicException('Entity manager service is unavailable.');
+        }
+
+        return $entityManager;
+    }
+
     /**
      * @param list<string> $roles
      */
@@ -148,6 +158,10 @@ class GuestManagementTest extends WebTestCase
         }
 
         $passwordHasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        if (!$passwordHasher instanceof UserPasswordHasherInterface) {
+            throw new \LogicException('Password hasher service is unavailable.');
+        }
+
         $user = new User();
         $user->setName('Guest Test User');
         $user->setEmail($email);
