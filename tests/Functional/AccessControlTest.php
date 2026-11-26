@@ -124,6 +124,9 @@ class AccessControlTest extends WebTestCase
         self::assertResponseRedirects('/login');
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     */
     public function restrictedRouteProvider(): iterable
     {
         yield 'password change' => ['/change-password'];

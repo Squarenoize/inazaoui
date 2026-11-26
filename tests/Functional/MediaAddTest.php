@@ -7,12 +7,16 @@ use App\Entity\User;
 use App\Entity\Album;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Field\ChoiceFormField;
+use Symfony\Component\DomCrawler\Field\FileFormField;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class MediaAddTest extends WebTestCase
 {
     private EntityManagerInterface $entityManager;
+    /** @var list<string> */
     private array $createdMediaPaths = [];
+    /** @var list<string> */
     private array $createdEmails = [];
 
     public function testGuestCanAddAMedia(): void
@@ -36,7 +40,9 @@ class MediaAddTest extends WebTestCase
             'media[title]' => 'Sunset Test',
         ]);
 
-        $form['media[file]']->upload($imagePath);
+        $fileField = $form->get('media[file]');
+        self::assertInstanceOf(FileFormField::class, $fileField);
+        $fileField->upload($imagePath);
         $client->submit($form);
 
         self::assertResponseRedirects('/admin/media');
@@ -80,10 +86,17 @@ class MediaAddTest extends WebTestCase
             'media[title]' => 'Admin Sunset Test',
         ]);
 
-        $form['media[file]']->upload($imagePath);
+        $fileField = $form->get('media[file]');
+        self::assertInstanceOf(FileFormField::class, $fileField);
+        $fileField->upload($imagePath);
 
-        $form['media[user]']->select($admin->getId());
-        $form['media[album]']->select($album->getId());
+        $userField = $form->get('media[user]');
+        self::assertInstanceOf(ChoiceFormField::class, $userField);
+        $userField->select((string) $admin->getId());
+
+        $albumField = $form->get('media[album]');
+        self::assertInstanceOf(ChoiceFormField::class, $albumField);
+        $albumField->select((string) $album->getId());
         $client->submit($form);
 
         self::assertResponseRedirects('/admin/media');
@@ -123,7 +136,9 @@ class MediaAddTest extends WebTestCase
             'media[title]' => 'Invalid Image',
         ]);
 
-        $form['media[file]']->upload($textPath);
+        $fileField = $form->get('media[file]');
+        self::assertInstanceOf(FileFormField::class, $fileField);
+        $fileField->upload($textPath);
         $client->submit($form);
 
         self::assertResponseIsSuccessful();
@@ -179,6 +194,9 @@ class MediaAddTest extends WebTestCase
         parent::tearDown();
     }
 
+    /**
+     * @param list<string> $roles
+     */
     private function createUser(string $email, string $plainPassword, array $roles): User
     {
         $existingUser = $this->entityManager

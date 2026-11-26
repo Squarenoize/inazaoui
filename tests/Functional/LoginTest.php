@@ -10,6 +10,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 class LoginTest extends WebTestCase
 {
     private ?EntityManagerInterface $entityManager = null;
+    /** @var list<string> */
     private array $createdEmails = [];
 
     protected function setUp(): void
@@ -102,12 +103,9 @@ class LoginTest extends WebTestCase
         self::assertSelectorExists('.alert-danger');
     }
 
-    private function createUser(
-        string $email,
-        string $plainPassword,
-        array $roles,
-        bool $firstConnection
-    ): User {
+    /** @param list<string> $roles */
+    private function createUser(string $email, string $plainPassword, array $roles, bool $firstConnection): User
+    {
         $container = static::getContainer();
         $passwordHasher = $container->get(UserPasswordHasherInterface::class);
         $this->entityManager = $container->get(EntityManagerInterface::class);

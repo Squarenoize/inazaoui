@@ -12,6 +12,7 @@ class GuestManagementTest extends WebTestCase
 {
     private KernelBrowser $client;
     private EntityManagerInterface $entityManager;
+    /** @var list<string> */
     private array $createdEmails = [];
 
     protected function setUp(): void
@@ -132,6 +133,9 @@ class GuestManagementTest extends WebTestCase
         parent::tearDown();
     }
 
+    /**
+     * @param list<string> $roles
+     */
     private function createUser(string $email, string $plainPassword, array $roles): User
     {
         $existingUser = $this->entityManager
