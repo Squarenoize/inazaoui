@@ -9,18 +9,11 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use App\Repository\UserRepository;
 
 final class GuestController extends AbstractController
 {
-    private CsrfTokenManagerInterface $csrfTokenManager;
-
-    public function __construct(CsrfTokenManagerInterface $csrfTokenManager)
-    {
-        $this->csrfTokenManager = $csrfTokenManager;
-    }
 
     #[Route('/admin/guest', name: 'admin_guest_index')]
     public function index(UserRepository $userRepository): Response
@@ -32,11 +25,9 @@ final class GuestController extends AbstractController
     }
 
     #[Route('/admin/guest/deactivate/{id}', name: 'admin_guest_deactivate', methods: ['POST'])]
-    public function deactivate(int $id, Request $request, EntityManagerInterface $entityManager, UserRepository $userRepository): Response
+    public function deactivate(int $id, EntityManagerInterface $entityManager, User $user): Response
     {
-        $this->validateCsrfToken($request, 'admin_guest_deactivate');
-
-        $user = $userRepository->find($id);
+  
         if ($user) {
             $user->setDeactivationDate(new \DateTimeImmutable());
             $entityManager->persist($user);
@@ -46,11 +37,9 @@ final class GuestController extends AbstractController
     }
 
     #[Route('/admin/guest/reactivate/{id}', name: 'admin_guest_reactivate', methods: ['POST'])]
-    public function activate(int $id, Request $request, EntityManagerInterface $entityManager, UserRepository $userRepository): Response
+    public function activate(EntityManagerInterface $entityManager, User $user): Response
     {
-        $this->validateCsrfToken($request, 'admin_guest_reactivate');
 
-        $user = $userRepository->find($id);
         if ($user) {
             $user->setDeactivationDate(null);
             $entityManager->persist($user);
@@ -60,11 +49,9 @@ final class GuestController extends AbstractController
     }
 
     #[Route('/admin/guest/delete/{id}', name: 'admin_guest_delete', methods: ['POST'])]
-    public function delete(int $id, Request $request, EntityManagerInterface $entityManager, UserRepository $userRepository): Response
+    public function delete(EntityManagerInterface $entityManager, User $user): Response
     {
-        $this->validateCsrfToken($request, 'admin_guest_delete');
 
-        $user = $userRepository->find($id);
         if ($user) {
             $entityManager->remove($user);
             $entityManager->flush();
@@ -109,12 +96,5 @@ final class GuestController extends AbstractController
         return bin2hex(random_bytes(8));
     }
 
-    private function validateCsrfToken(Request $request, string $tokenId): void
-    {
-        $token = $request->request->get('_token');
-        if (!$this->csrfTokenManager->isTokenValid(new \Symfony\Component\Security\Csrf\CsrfToken($tokenId, $token))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token');
-        }
-    }
 }
 

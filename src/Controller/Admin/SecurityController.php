@@ -14,29 +14,26 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class SecurityController extends AbstractController
 {
-    #[Route('/login', name: 'admin_login')]
-    public function login(AuthenticationUtils $authenticationUtils)
+    #[Route('/login', name: 'admin_login', methods: ['GET', 'POST'])]
+    public function login(AuthenticationUtils $authenticationUtils): Response
     {
         $error = $authenticationUtils->getLastAuthenticationError();
         $lastUsername = $authenticationUtils->getLastUsername();
+        
         return $this->render('admin/login.html.twig', [
             'last_username' => $lastUsername,
             'error'         => $error,
         ]);
     }
 
-    #[Route('/logout', name: 'app_logout')]
+    #[Route('/logout', name: 'app_logout', methods: ['POST'])]
     public function logout()
     {
     }
 
     #[Route('/change-password', name: 'app_change_password', methods: ['GET', 'POST'])]
-    public function changePassword(
-        Request $request,
-        UserPasswordHasherInterface $passwordHasher,
-        EntityManagerInterface $entityManager,
-        ValidatorInterface $validator
-    ): Response {
+    public function changePassword(Request $request, UserPasswordHasherInterface $passwordHasher, EntityManagerInterface $entityManager, ValidatorInterface $validator): Response
+    {
         $user = $this->getUser();
         
         if (!$user instanceof User) {
