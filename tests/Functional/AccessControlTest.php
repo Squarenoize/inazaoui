@@ -2,45 +2,10 @@
 
 namespace App\Tests\Functional;
 
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\User;
 
-class AccessControlTest extends WebTestCase
+class AccessControlTest extends FunctionalTestCase
 {
-    private KernelBrowser $client;
-    private EntityManagerInterface $entityManager;
-    private ?User $createdGuest = null;
-
-    protected function setUp(): void
-    {
-        self::ensureKernelShutdown();
-        $this->client = static::createClient();
-
-        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
-        if (!$entityManager instanceof EntityManagerInterface) {
-            throw new \LogicException('Entity manager service is unavailable.');
-        }
-        $this->entityManager = $entityManager;
-    }
-
-    protected function tearDown(): void
-    {
-        if ($this->createdGuest !== null) {
-            $guest = $this->entityManager
-                ->getRepository(User::class)
-                ->find($this->createdGuest->getId());
-
-            if ($guest !== null) {
-                $this->entityManager->remove($guest);
-                $this->entityManager->flush();
-            }
-        }
-
-        parent::tearDown();
-    }
-
     public function testHomePageIsAccessible(): void
     {
         $this->client->request('GET', '/');
@@ -74,33 +39,16 @@ class AccessControlTest extends WebTestCase
 
     public function testGuestPageIsAccessible(): void
     {
-        $existingGuest = $this->entityManager
+        $guest = $this->entityManager
             ->getRepository(User::class)
-            ->findOneBy(['email' => 'guest-crawler@example.com']);
-
-        if ($existingGuest !== null) {
-            $this->entityManager->remove($existingGuest);
-            $this->entityManager->flush();
-        }
-
-        $guest = new User();
-
-        $guest->setName('Invité Test');
-        $guest->setEmail('guest-crawler@example.com');
-        $guest->setDescription('Description visible');
-        $guest->setRoles(['ROLE_USER']);
-        $guest->setFirstConnection(false);
-        $guest->setPassword('hashed-password');
-
-        $this->entityManager->persist($guest);
-        $this->entityManager->flush();
-        $this->createdGuest = $guest;
+            ->findOneBy(['email' => 'john@example.com']);
+        self::assertInstanceOf(User::class, $guest);
 
         $crawler = $this->client->request('GET', '/guests');
         $this->client->click($crawler->filter('a[href="/guest/' . $guest->getId() . '"]')->link());
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h3', 'Invité Test');
+        self::assertSelectorTextContains('h3', 'John Doe');
     }
 
     public function testPortfolioPageIsAccessible(): void

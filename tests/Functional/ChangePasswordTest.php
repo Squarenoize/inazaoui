@@ -3,46 +3,10 @@
 namespace App\Tests\Functional;
 
 use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-class ChangePasswordTest extends WebTestCase
+class ChangePasswordTest extends FunctionalTestCase
 {
-    private KernelBrowser $client;
-    private EntityManagerInterface $entityManager;
-    /** @var list<string> */
-    private array $createdEmails = [];
-
-    protected function setUp(): void
-    {
-        self::ensureKernelShutdown();
-        $this->client = static::createClient();
-
-        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
-        if (!$entityManager instanceof EntityManagerInterface) {
-            throw new \LogicException('Entity manager service is unavailable.');
-        }
-        $this->entityManager = $entityManager;
-    }
-
-    protected function tearDown(): void
-    {
-        foreach ($this->createdEmails as $email) {
-            $user = $this->entityManager
-                ->getRepository(User::class)
-                ->findOneBy(['email' => $email]);
-
-            if ($user !== null) {
-                $this->entityManager->remove($user);
-            }
-        }
-
-        $this->entityManager->flush();
-        parent::tearDown();
-    }
-
     public function testAnonymousUserCannotAccessPasswordChangePage(): void
     {
         $this->client->request('GET', '/change-password');
@@ -111,9 +75,12 @@ class ChangePasswordTest extends WebTestCase
 
     private function loginFirstConnectionUser(): User
     {
-        $email = 'change-password-functional@example.com';
-        $password = 'OldPassword@123!';
-        $user = $this->createUser($email, $password);
+        $email = 'jane@example.com';
+        $password = 'User@12345!';
+        $user = $this->entityManager
+            ->getRepository(User::class)
+            ->findOneBy(['email' => $email]);
+        self::assertInstanceOf(User::class, $user);
 
         $crawler = $this->client->request('GET', '/login');
         $form = $crawler->selectButton('Connexion')->form([
@@ -126,38 +93,6 @@ class ChangePasswordTest extends WebTestCase
 
         $this->client->followRedirect();
         self::assertResponseIsSuccessful();
-
-        return $user;
-    }
-
-    private function createUser(string $email, string $plainPassword): User
-    {
-        $existingUser = $this->entityManager
-            ->getRepository(User::class)
-            ->findOneBy(['email' => $email]);
-
-        if ($existingUser !== null) {
-            $this->entityManager->remove($existingUser);
-            $this->entityManager->flush();
-        }
-
-        $passwordHasher = static::getContainer()->get(UserPasswordHasherInterface::class);
-        if (!$passwordHasher instanceof UserPasswordHasherInterface) {
-            throw new \LogicException('Password hasher service is unavailable.');
-        }
-
-        $user = new User();
-        $user->setName('Change Password Test');
-        $user->setEmail($email);
-        $user->setDescription('User created for password change tests');
-        $user->setRoles(['ROLE_USER']);
-        $user->setFirstConnection(true);
-        $user->setDeactivationDate(null);
-        $user->setPassword($passwordHasher->hashPassword($user, $plainPassword));
-
-        $this->entityManager->persist($user);
-        $this->entityManager->flush();
-        $this->createdEmails[] = $email;
 
         return $user;
     }

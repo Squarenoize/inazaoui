@@ -5,35 +5,28 @@ namespace App\Tests\Functional;
 use App\Entity\Media;
 use App\Entity\User;
 use App\Entity\Album;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\DomCrawler\Field\ChoiceFormField;
 use Symfony\Component\DomCrawler\Field\FileFormField;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-class MediaAddTest extends WebTestCase
+class MediaAddTest extends FunctionalTestCase
 {
-    private EntityManagerInterface $entityManager;
     /** @var list<string> */
     private array $createdMediaPaths = [];
     /** @var list<string> */
-    private array $createdEmails = [];
+    private array $createdUploadPaths = [];
 
     public function testGuestCanAddAMedia(): void
     {
-        $client = static::createClient();
-        $this->entityManager = $this->getEntityManager();
-
-        $user = $this->createUser(
-            'media-guest@example.com',
-            'Guest@12345!',
-            ['ROLE_USER']
-        );
+        $user = $this->entityManager
+            ->getRepository(User::class)
+            ->findOneBy(['email' => 'john@example.com']);
+        self::assertInstanceOf(User::class, $user);
 
         $imagePath = $this->createValidPng();
-        $client->loginUser($user);
+        $this->createdUploadPaths[] = $imagePath;
+        $this->client->loginUser($user);
 
-        $crawler = $client->request('GET', '/admin/media/add');
+        $crawler = $this->client->request('GET', '/admin/media/add');
         self::assertResponseIsSuccessful();
 
         $form = $crawler->selectButton('Ajouter')->form([
@@ -43,7 +36,7 @@ class MediaAddTest extends WebTestCase
         $fileField = $form->get('media[file]');
         self::assertInstanceOf(FileFormField::class, $fileField);
         $fileField->upload($imagePath);
-        $client->submit($form);
+        $this->client->submit($form);
 
         self::assertResponseRedirects('/admin/media');
 
@@ -62,24 +55,21 @@ class MediaAddTest extends WebTestCase
 
     public function testAdminCanAddAMediaWithAlbum(): void
     {
-        $client = static::createClient();
-        $this->entityManager = $this->getEntityManager();
+        $admin = $this->entityManager
+            ->getRepository(User::class)
+            ->findOneBy(['email' => 'admin@example.com']);
+        self::assertInstanceOf(User::class, $admin);
 
-        $admin = $this->createUser(
-            'media-admin@example.com',
-            'Admin@12345!',
-            ['ROLE_ADMIN']
-        );
-
-        $album = new Album();
-        $album->setName('Admin Album');
-        $this->entityManager->persist($album);
-        $this->entityManager->flush();
+        $album = $this->entityManager
+            ->getRepository(Album::class)
+            ->findOneBy(['name' => 'Nature']);
+        self::assertInstanceOf(Album::class, $album);
 
         $imagePath = $this->createValidPng();
-        $client->loginUser($admin);
+        $this->createdUploadPaths[] = $imagePath;
+        $this->client->loginUser($admin);
 
-        $crawler = $client->request('GET', '/admin/media/add');
+        $crawler = $this->client->request('GET', '/admin/media/add');
         self::assertResponseIsSuccessful();
 
         $form = $crawler->selectButton('Ajouter')->form([
@@ -97,7 +87,7 @@ class MediaAddTest extends WebTestCase
         $albumField = $form->get('media[album]');
         self::assertInstanceOf(ChoiceFormField::class, $albumField);
         $albumField->select((string) $album->getId());
-        $client->submit($form);
+        $this->client->submit($form);
 
         self::assertResponseRedirects('/admin/media');
 
@@ -116,22 +106,18 @@ class MediaAddTest extends WebTestCase
 
     public function testInvalidFileIsRejected(): void
     {
-        $client = static::createClient();
-        $this->entityManager = $this->getEntityManager();
-
-        $user = $this->createUser(
-            'invalid-media-guest@example.com',
-            'Guest@12345!',
-            ['ROLE_USER']
-        );
+        $user = $this->entityManager
+            ->getRepository(User::class)
+            ->findOneBy(['email' => 'john@example.com']);
+        self::assertInstanceOf(User::class, $user);
 
         $textPath = tempnam(sys_get_temp_dir(), 'invalid-media');
         self::assertNotFalse($textPath);
         file_put_contents($textPath, 'This is not an image');
 
-        $client->loginUser($user);
+        $this->client->loginUser($user);
 
-        $crawler = $client->request('GET', '/admin/media/add');
+        $crawler = $this->client->request('GET', '/admin/media/add');
         $form = $crawler->selectButton('Ajouter')->form([
             'media[title]' => 'Invalid Image',
         ]);
@@ -139,7 +125,7 @@ class MediaAddTest extends WebTestCase
         $fileField = $form->get('media[file]');
         self::assertInstanceOf(FileFormField::class, $fileField);
         $fileField->upload($textPath);
-        $client->submit($form);
+        $this->client->submit($form);
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('.invalid-feedback');
@@ -162,81 +148,14 @@ class MediaAddTest extends WebTestCase
                 }
             }
 
-            $albums = $this->entityManager
-                ->getRepository(Album::class)
-                ->findBy(['name' => 'Admin Album']);
-
-            foreach ($albums as $album) {
-                $this->entityManager->remove($album);
-            }
-
-            $medias = $this->entityManager
-                ->getRepository(Media::class)
-                ->findBy(['title' => ['Sunset Test', 'Invalid Image']]);
-
-            foreach ($medias as $media) {
-                $this->entityManager->remove($media);
-            }
-
-            foreach ($this->createdEmails as $email) {
-                $user = $this->entityManager
-                    ->getRepository(User::class)
-                    ->findOneBy(['email' => $email]);
-
-                if ($user !== null) {
-                    $this->entityManager->remove($user);
+            foreach ($this->createdUploadPaths as $path) {
+                if (file_exists($path)) {
+                    unlink($path);
                 }
             }
-
-            $this->entityManager->flush();
         }
 
         parent::tearDown();
-    }
-
-    private function getEntityManager(): EntityManagerInterface
-    {
-        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
-        if (!$entityManager instanceof EntityManagerInterface) {
-            throw new \LogicException('Entity manager service is unavailable.');
-        }
-
-        return $entityManager;
-    }
-
-    /**
-     * @param list<string> $roles
-     */
-    private function createUser(string $email, string $plainPassword, array $roles): User
-    {
-        $existingUser = $this->entityManager
-            ->getRepository(User::class)
-            ->findOneBy(['email' => $email]);
-
-        if ($existingUser !== null) {
-            $this->entityManager->remove($existingUser);
-            $this->entityManager->flush();
-        }
-
-        $passwordHasher = static::getContainer()->get(UserPasswordHasherInterface::class);
-        if (!$passwordHasher instanceof UserPasswordHasherInterface) {
-            throw new \LogicException('Password hasher service is unavailable.');
-        }
-
-        $user = new User();
-        $user->setName('Media Test User');
-        $user->setEmail($email);
-        $user->setDescription('User created for media functional tests');
-        $user->setRoles($roles);
-        $user->setFirstConnection(false);
-        $user->setDeactivationDate(null);
-        $user->setPassword($passwordHasher->hashPassword($user, $plainPassword));
-
-        $this->entityManager->persist($user);
-        $this->entityManager->flush();
-        $this->createdEmails[] = $email;
-
-        return $user;
     }
 
     private function createValidPng(): string

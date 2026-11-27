@@ -2,33 +2,16 @@
 
 namespace App\Tests\Functional;
 
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\User;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-class GuestManagementTest extends WebTestCase
+class GuestManagementTest extends FunctionalTestCase
 {
-    private KernelBrowser $client;
-    private EntityManagerInterface $entityManager;
-    /** @var list<string> */
-    private array $createdEmails = [];
-
-    protected function setUp(): void
-    {
-        self::ensureKernelShutdown();
-        $this->client = static::createClient();
-        $this->entityManager = $this->getEntityManager();
-    }
-
     public function testAdminCanAddGuest(): void
     {
-        $admin = $this->createUser(
-            'guest-admin@example.com',
-            'Admin@12345!',
-            ['ROLE_ADMIN']
-        );
+        $admin = $this->entityManager
+            ->getRepository(User::class)
+            ->findOneBy(['email' => 'admin@example.com']);
+        self::assertInstanceOf(User::class, $admin);
         $this->client->loginUser($admin);
 
         $crawler = $this->client->request('GET', '/admin/guest/add');
@@ -56,16 +39,15 @@ class GuestManagementTest extends WebTestCase
 
     public function testAdminCanDeactivateReactivateAndDeleteGuest(): void
     {
-        $admin = $this->createUser(
-            'guest-actions-admin@example.com',
-            'Admin@12345!',
-            ['ROLE_ADMIN']
-        );
-        $guest = $this->createUser(
-            'guest-actions@example.com',
-            'Guest@12345!',
-            ['ROLE_USER']
-        );
+        $admin = $this->entityManager
+            ->getRepository(User::class)
+            ->findOneBy(['email' => 'admin@example.com']);
+        self::assertInstanceOf(User::class, $admin);
+
+        $guest = $this->entityManager
+            ->getRepository(User::class)
+            ->findOneBy(['email' => 'john@example.com']);
+        self::assertInstanceOf(User::class, $guest);
         $this->client->loginUser($admin);
 
         $crawler = $this->client->request('GET', '/admin/guest');
@@ -77,11 +59,12 @@ class GuestManagementTest extends WebTestCase
         $this->client->submit($deactivateForm);
 
         self::assertResponseRedirects('/admin/guest');
-        $this->entityManager = $this->getEntityManager();
         $deactivatedGuest = $this->entityManager
             ->getRepository(User::class)
             ->find($guest->getId());
-        self::assertNotNull($deactivatedGuest?->getDeactivationDate());
+        self::assertInstanceOf(User::class, $deactivatedGuest);
+        $this->entityManager->refresh($deactivatedGuest);
+        self::assertNotNull($deactivatedGuest->getDeactivationDate());
 
         $crawler = $this->client->followRedirect();
         $reactivateForm = $crawler
@@ -90,11 +73,12 @@ class GuestManagementTest extends WebTestCase
         $this->client->submit($reactivateForm);
 
         self::assertResponseRedirects('/admin/guest');
-        $this->entityManager = $this->getEntityManager();
         $reactivatedGuest = $this->entityManager
             ->getRepository(User::class)
             ->find($guest->getId());
-        self::assertNull($reactivatedGuest?->getDeactivationDate());
+        self::assertInstanceOf(User::class, $reactivatedGuest);
+        $this->entityManager->refresh($reactivatedGuest);
+        self::assertNull($reactivatedGuest->getDeactivationDate());
 
         $crawler = $this->client->followRedirect();
         $deleteForm = $crawler
@@ -103,78 +87,10 @@ class GuestManagementTest extends WebTestCase
         $this->client->submit($deleteForm);
 
         self::assertResponseRedirects('/admin/guest');
+        $this->entityManager->clear();
         $deletedGuest = $this->entityManager
             ->getRepository(User::class)
             ->find($guest->getId());
         self::assertNull($deletedGuest);
-    }
-
-    protected function tearDown(): void
-    {
-        foreach (array_unique($this->createdEmails) as $email) {
-            $user = $this->entityManager
-                ->getRepository(User::class)
-                ->findOneBy(['email' => $email]);
-
-            if ($user !== null) {
-                $this->entityManager->remove($user);
-            }
-        }
-
-        $addedGuest = $this->entityManager
-            ->getRepository(User::class)
-            ->findOneBy(['email' => 'new-functional-guest@example.com']);
-
-        if ($addedGuest !== null) {
-            $this->entityManager->remove($addedGuest);
-        }
-
-        $this->entityManager->flush();
-        parent::tearDown();
-    }
-
-    private function getEntityManager(): EntityManagerInterface
-    {
-        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
-        if (!$entityManager instanceof EntityManagerInterface) {
-            throw new \LogicException('Entity manager service is unavailable.');
-        }
-
-        return $entityManager;
-    }
-
-    /**
-     * @param list<string> $roles
-     */
-    private function createUser(string $email, string $plainPassword, array $roles): User
-    {
-        $existingUser = $this->entityManager
-            ->getRepository(User::class)
-            ->findOneBy(['email' => $email]);
-
-        if ($existingUser !== null) {
-            $this->entityManager->remove($existingUser);
-            $this->entityManager->flush();
-        }
-
-        $passwordHasher = static::getContainer()->get(UserPasswordHasherInterface::class);
-        if (!$passwordHasher instanceof UserPasswordHasherInterface) {
-            throw new \LogicException('Password hasher service is unavailable.');
-        }
-
-        $user = new User();
-        $user->setName('Guest Test User');
-        $user->setEmail($email);
-        $user->setDescription('User created for guest functional tests');
-        $user->setRoles($roles);
-        $user->setFirstConnection(false);
-        $user->setDeactivationDate(null);
-        $user->setPassword($passwordHasher->hashPassword($user, $plainPassword));
-
-        $this->entityManager->persist($user);
-        $this->entityManager->flush();
-        $this->createdEmails[] = $email;
-
-        return $user;
     }
 }
